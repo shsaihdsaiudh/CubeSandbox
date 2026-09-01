@@ -28,7 +28,7 @@ DOCKER_BUILD_DIR=docker
 
 
 PKG=github.com/tencentcloud/CubeSandbox/CubeMaster/pkg/base
-PROTO=services/errorcode services/cubebox services/images types
+PROTO=services/errorcode services/cubebox services/images services/schedulerplugin types
 
 
 # Version — injected at build time via ldflags.
