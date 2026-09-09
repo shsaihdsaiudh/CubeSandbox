@@ -65,14 +65,17 @@ scheduler:
         labels:
           workload: template_reuse
       scores:
-        # Main objective: prefer nodes holding a local template replica.
+        # Locality preference: favor nodes holding a local template replica,
+        # reducing remote template restores without making locality mandatory.
         - name: image_score
           type: go
-          weight: 0.7
-        # Secondary objective: keep overloaded cache nodes from taking all.
+          weight: 0.1
+
+        # Primary objective: prefer nodes with lower current allocation so
+        # template-bearing nodes do not become persistent hotspots.
         - name: real_time_weighted_average
           type: go
-          weight: 0.3
+          weight: 0.9
       selection:
         method: spread
         top_n: 3

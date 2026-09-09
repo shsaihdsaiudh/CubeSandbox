@@ -36,6 +36,24 @@ func TestInjectFactorySchedulerProfilesOnEmptyScheduler(t *testing.T) {
 	assert.Equal(t, map[string]string{"workload": "template_reuse"}, byName["template_reuse"].Route.Labels)
 	assert.Equal(t, []string{"workload"}, sched.ProfileRouteLabelKeys)
 
+	// BurstBalance 通过同步实时资源评分与 Top-3 spread 组合，
+	// 在高分候选中优先选择运行沙箱数量较少的节点。
+	burstBalance := byName["burst_balance"]
+	if assert.Len(t, burstBalance.Scores, 1) {
+		assert.Equal(t, "real_time_weighted_average", burstBalance.Scores[0].Name)
+		assert.InDelta(t, 1.0, burstBalance.Scores[0].Weight, 1e-9)
+	}
+	assert.Equal(t, "spread", burstBalance.Selection.Method)
+	assert.Equal(t, 3, burstBalance.Selection.TopN)
+
+	// TemplateReuse 以实时负载为主要目标，保留适度的模板本地性偏好。
+	templateReuseWeights := make(map[string]float64)
+	for _, scorer := range byName["template_reuse"].Scores {
+		templateReuseWeights[scorer.Name] = scorer.Weight
+	}
+	assert.InDelta(t, 0.1, templateReuseWeights["image_score"], 1e-9)
+	assert.InDelta(t, 0.9, templateReuseWeights["real_time_weighted_average"], 1e-9)
+
 	// 内置 scorer 的构造函数会读全局 plugin_conf，缺失时启动即 panic，
 	// 所以 score 子树必须随出厂策略一并注入；enable_scorers 保持为空，
 	// 不激活 legacy 评分流水线
