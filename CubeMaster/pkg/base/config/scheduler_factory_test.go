@@ -36,6 +36,13 @@ func TestInjectFactorySchedulerProfilesOnEmptyScheduler(t *testing.T) {
 	assert.Equal(t, map[string]string{"workload": "template_reuse"}, byName["template_reuse"].Route.Labels)
 	assert.Equal(t, []string{"workload"}, sched.ProfileRouteLabelKeys)
 
+	templateReuseWeights := make(map[string]float64)
+	for _, scorer := range byName["template_reuse"].Scores {
+		templateReuseWeights[scorer.Name] = scorer.Weight
+	}
+	assert.InDelta(t, 0.1, templateReuseWeights["image_score"], 1e-9)
+	assert.InDelta(t, 0.9, templateReuseWeights["real_time_weighted_average"], 1e-9)
+
 	// 内置 scorer 的构造函数会读全局 plugin_conf，缺失时启动即 panic，
 	// 所以 score 子树必须随出厂策略一并注入；enable_scorers 保持为空，
 	// 不激活 legacy 评分流水线

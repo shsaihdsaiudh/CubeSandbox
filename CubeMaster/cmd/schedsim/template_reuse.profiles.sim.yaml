@@ -5,11 +5,14 @@
 #   remote restore when shared storage is available.
 #
 # Strategy:
-#   1. Mandatory guards reject unsafe or resource-insufficient nodes.
-#   2. image_score rewards nodes with a local template replica.
-#   3. real_time_weighted_average prevents overloaded local nodes from
-#      receiving all requests.
-#   4. Top-3 spread avoids repeatedly selecting one cache node.
+#   1. Mandatory guards reject unsafe or infeasible nodes.
+#   2. real_time_weighted_average is the primary placement objective.
+#   3. image_score adds a moderate preference for nodes that already hold
+#      the requested template, while remote restore remains available.
+#   4. Top-N spread prevents repeated selection of one high-scoring node.
+#
+# The 0.1/0.9 weights are an evaluated locality/load trade-off rather than
+# universal optimal values.
 
 common:
   http_port: 18089
@@ -78,11 +81,11 @@ scheduler:
       scores:
         - name: image_score
           type: go
-          weight: 0.7
+          weight: 0.1
 
         - name: real_time_weighted_average
           type: go
-          weight: 0.3
+          weight: 0.9
 
       selection:
         method: spread
